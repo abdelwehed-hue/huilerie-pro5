@@ -27,6 +27,7 @@ INDEXES: dict[str, list[IndexModel]] = {
     "attendance": [
         IndexModel([("worker_id", ASCENDING), ("day", ASCENDING)], name="worker_day_unique", unique=True),
         IndexModel([("day", ASCENDING), ("worker_name", ASCENDING)], name="day_worker"),
+        IndexModel([("worker_id", ASCENDING), ("status", ASCENDING), ("check_out", ASCENDING)], name="worker_open_shift"),
     ],
     "users": [
         IndexModel([("id", ASCENDING)], name="id", unique=True),
