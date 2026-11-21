@@ -232,7 +232,7 @@ export default function AttendanceRegister() {
                     <div className="flex flex-wrap gap-1">
                       {openShiftByWorker.has(worker.id) && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-out" })}><LogOut className="me-1 size-3" />{ar ? "خروج" : "Sortie"}</Button>}
                       {!todayRecord && !openShiftByWorker.has(worker.id) && <Button size="sm" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-in" })}><LogIn className="me-1 size-3" />{ar ? "دخول" : "Entrée"}</Button>}
-                      {!recordsByWorkerDay.has(`${worker.id}|${absenceDate}`) && absenceDate && absenceDate >= startDate && absenceDate <= endDate && absenceDate <= data.today && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "absence", day: absenceDate })}>{ar ? "غياب" : "Absent"}</Button>}
+                      {!recordsByWorkerDay.has(`${worker.id}|${absenceDate}`) && !openShiftByWorker.has(worker.id) && absenceDate && absenceDate >= startDate && absenceDate <= endDate && absenceDate <= data.today && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "absence", day: absenceDate })}>{ar ? "غياب" : "Absent"}</Button>}
                     </div>
                   </td>
                 </tr>;
