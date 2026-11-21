@@ -127,9 +127,12 @@ export default function ManagerDashboard() {
 
     <div className="grid gap-3 md:grid-cols-3">
       <section className="rounded-2xl border bg-white p-4 shadow-sm md:col-span-3">
-        <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-bold">{ar ? "العمال النشطون" : "Employés actifs"}</h2>
-          <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">{workers.data ? workers.data.filter((worker) => worker.role === "worker" && worker.active).length : "—"}</span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800">{workers.data ? workers.data.filter((worker) => worker.role === "worker" && worker.active).length : "—"}</span>
+            <Link to="/workers" className="rounded-lg bg-sky-700 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-800">{ar ? "سجل الحضور والساعات" : "Présences et heures"}</Link>
+          </div>
         </div>
         {workers.isError ? <p className="text-sm text-amber-700">{ar ? "تعذر تحميل قائمة العمال." : "Impossible de charger la liste des employés."}</p> :
           workers.isPending ? <p className="text-sm text-stone-500">{ar ? "جارٍ تحميل العمال…" : "Chargement des employés…"}</p> :
@@ -143,7 +146,7 @@ export default function ManagerDashboard() {
                   </div>
                 ))}
               </div>}
-        <p className="mt-3 text-xs text-stone-500">{ar ? "هذه حالة الحساب فقط؛ لا يعرض التطبيق حالياً سجلاً يومياً موثوقاً للحضور والانصراف." : "Il s’agit uniquement de l’état du compte ; l’application ne fournit pas actuellement de registre journalier fiable des présences."}</p>
+        <p className="mt-3 text-xs text-stone-500">{ar ? "هذه حالة الحساب فقط. افتح سجل العمال لتسجيل الحضور والانصراف ومراجعة الساعات." : "Cet indicateur montre uniquement l’état du compte. Ouvrez le registre des employés pour saisir les présences et consulter les heures."}</p>
       </section>
       <Link to="/loads" className="block rounded-2xl outline-none transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-sky-500"><section className="rounded-2xl border bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2 text-stone-700"><CalendarClock className="size-5 text-orange-700" /><h2 className="font-bold">{ar ? "حالة الحمولات" : "État des chargements"}</h2></div>
