@@ -132,7 +132,7 @@ export default function AttendanceRegister() {
         };
       });
     });
-  }, [data, weekStarts, activeWorkers]);
+  }, [data, weekStarts, activeWorkers, startDate, endDate]);
 
   const selectedRecords = useMemo(() => (data?.records ?? []).filter((record) =>
     record.day >= startDate && record.day <= endDate
@@ -171,7 +171,7 @@ export default function AttendanceRegister() {
         </label>
         <label className="grid gap-1 text-xs font-medium text-stone-600">
           {ar ? "تاريخ تسجيل الغياب" : "Date d’absence à confirmer"}
-          <Input type="date" value={absenceDate} max={data?.today} onChange={(event) => setAbsenceDate(event.target.value)} />
+          <Input type="date" value={absenceDate} min={startDate || undefined} max={endDate && data?.today && endDate < data.today ? endDate : data?.today} onChange={(event) => setAbsenceDate(event.target.value)} />
         </label>
       </div>
 
@@ -215,7 +215,7 @@ export default function AttendanceRegister() {
                     <div className="flex flex-wrap gap-1">
                       {!todayRecord && <Button size="sm" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-in" })}><LogIn className="me-1 size-3" />{ar ? "دخول" : "Entrée"}</Button>}
                       {todayRecord?.status === "present" && !todayRecord.check_out && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-out" })}><LogOut className="me-1 size-3" />{ar ? "خروج" : "Sortie"}</Button>}
-                      {!recordsByWorkerDay.has(`${worker.id}|${absenceDate}`) && absenceDate && absenceDate <= data.today && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "absence", day: absenceDate })}>{ar ? "غياب" : "Absent"}</Button>}
+                      {!recordsByWorkerDay.has(`${worker.id}|${absenceDate}`) && absenceDate && absenceDate >= startDate && absenceDate <= endDate && absenceDate <= data.today && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "absence", day: absenceDate })}>{ar ? "غياب" : "Absent"}</Button>}
                     </div>
                   </td>
                 </tr>;
