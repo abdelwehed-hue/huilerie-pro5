@@ -55,6 +55,25 @@ jobs:
       - name: Test invoice calculations without database access
         run: python -m pytest -o addopts= tests/test_invoices_unit.py tests/test_client_accounts_unit.py tests/test_tunisie_sms_phone_unit.py tests/test_client_delete_unit.py tests/test_load_delete_unit.py tests/test_load_completion_reliability.py tests/test_atomic_invoice_deletes_unit.py tests/test_client_options_unit.py tests/test_attendance_unit.py
 
+  attendance-unit-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      JWT_SECRET: unit-test-only-secret
+      MONGO_URL: mongodb://127.0.0.1:27017
+      DB_NAME: attendance_unit_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install attendance test dependencies
+        run: python -m pip install fastapi pymongo motor python-dotenv pyjwt passlib pytest pytest-asyncio
+      - name: Test manager attendance endpoints
+        run: python -m pytest -o addopts= tests/test_attendance_unit.py
+
   commercial-unit-tests:
     runs-on: ubuntu-latest
     defaults:
