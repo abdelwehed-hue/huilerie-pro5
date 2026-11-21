@@ -37,7 +37,7 @@ type Load = {
   cancelled?: boolean;
   status?: string;
 };
-type User = { id: string; role: string; active: boolean; full_name: string };\ntype AttendanceRecord = { worker_id: string; check_in?: string | null; check_out?: string | null };\ntype AttendanceRow = { id: string; full_name: string; username?: string; status: "absent" | "present" | "completed"; attendance?: AttendanceRecord | null };\ntype AttendanceResponse = { attendance_date: string; workers: AttendanceRow[] };
+type AttendanceRecord = { worker_id: string; check_in?: string | null; check_out?: string | null };\ntype AttendanceRow = { id: string; full_name: string; username?: string; status: "absent" | "present" | "completed"; attendance?: AttendanceRecord | null };\ntype AttendanceResponse = { attendance_date: string; workers: AttendanceRow[] };
 
 function Metric({ label, value, detail, icon: Icon, tone }: {
   label: string; value: string; detail: string; icon: LucideIcon; tone: string;
@@ -95,8 +95,8 @@ export default function ManagerDashboard() {
   const currentLoads = (loads.data ?? []).filter((load) => !load.cancelled);
   const pendingLoads = currentLoads.filter((load) => load.oil_kg == null).length;
   const completedLoads = currentLoads.filter((load) => load.oil_kg != null).length;
-  const loading = stats.isPending || loads.isPending || users.isPending || accounting.isPending || attendance.isPending;
-  const failed = stats.isError || loads.isError || users.isError || accounting.isError || attendance.isError;
+  const loading = stats.isPending || loads.isPending || accounting.isPending || attendance.isPending;
+  const failed = stats.isError || loads.isError || accounting.isError || attendance.isError;
   const money = (v: unknown) => fmtMoney(Number(v ?? 0));
   const refresh = () => { void qc.invalidateQueries({ queryKey: ["manager-dashboard"] }); };
 
