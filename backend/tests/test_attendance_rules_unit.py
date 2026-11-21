@@ -57,3 +57,22 @@ def test_date_range_validation():
     with pytest.raises(HTTPException) as exc:
         _parse_range("2025-01-01", "2026-11-20")
     assert exc.value.status_code == 422
+
+
+def test_shift_over_24_hours_is_flagged_for_review_and_not_counted():
+    check_in = datetime(2026, 11, 20, 8, 0, tzinfo=timezone.utc)
+    check_out = check_in + timedelta(hours=25)
+    record = _record_out({
+        "id": "attendance-long-shift",
+        "worker_id": "worker-1",
+        "worker_name": "Worker",
+        "day": "2026-11-20",
+        "status": "present",
+        "check_in": check_in,
+        "check_out": check_out,
+        "created_at": check_in,
+        "updated_at": check_out,
+    })
+
+    assert record["duration_minutes"] is None
+    assert record["duration_review_required"] is True
