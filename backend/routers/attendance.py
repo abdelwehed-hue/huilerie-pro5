@@ -1,16 +1,15 @@
 """Administrator-managed employee attendance.
 
-All business dates use Africa/Tunis. Timestamps are stored as UTC-aware datetimes.
-A shift belongs to the local calendar date on which check-in was recorded; a shift
-may finish after midnight and its full elapsed duration is attributed to that day.
+Business dates use Africa/Tunis. Timestamps are stored in UTC. A shift belongs
+to the local date of check-in; an overnight shift is attributed to that date.
 """
 import uuid
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
-from pymongo import ReturnDocument
+from pydantic import BaseModel
+from pymongo import ASCENDING, ReturnDocument
 from pymongo.errors import DuplicateKeyError
 
 from lib.auth import require_admin
@@ -82,13 +81,34 @@ async def _worker(worker_id: str) -> dict:
     return worker
 
 
+async def _ensure_attendance_indexes() -> None:
+    # Ensure uniqueness before the first write, even if the general startup
+    # index task has not completed yet.
+    await db.attendance.create_index(
+        [("worker_id", ASCENDING), ("day", ASCENDING)],
+        name="worker_day_unique",
+        unique=True,
+    )
+    await db.attendance.create_index(
+        [("day", ASCENDING), ("worker_name", ASCENDING)],
+        name="day_worker",
+    )
+
+
 @router.get("/attendance")
 async def attendance_register(
-    start_date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"),
-    end_date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    start_date: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     _: dict = Depends(require_admin),
 ):
-    start, end = _parse_range(start_date, end_date)
+    today = _local_today()
+    if start_date is None and end_date is None:
+        start, end = today - timedelta(days=6), today
+    elif start_date is None or end_date is None:
+        raise HTTPException(422, "both_start_and_end_dates_are_required")
+    else:
+        start, end = _parse_range(start_date, end_date)
+
     workers = await db.users.find(
         {"role": "worker"},
         {"_id": 0, "id": 1, "full_name": 1, "active": 1},
@@ -99,6 +119,7 @@ async def attendance_register(
     ).sort([("day", 1), ("worker_name", 1)]).to_list(10000)
     return {
         "timezone": "Africa/Tunis",
+        "today": today.isoformat(),
         "start_date": start.isoformat(),
         "end_date": end.isoformat(),
         "workers": workers,
@@ -109,8 +130,17 @@ async def attendance_register(
 @router.post("/attendance/{worker_id}/check-in")
 async def attendance_check_in(worker_id: str, admin: dict = Depends(require_admin)):
     worker = await _worker(worker_id)
+    if not worker.get("active"):
+        raise HTTPException(409, "worker_is_inactive")
+    await _ensure_attendance_indexes()
     now = datetime.now(timezone.utc)
     local_day = now.astimezone(TUNIS_TZ).date().isoformat()
+    open_shift = await db.attendance.find_one(
+        {"worker_id": worker_id, "status": "present", "check_out": None},
+        {"_id": 0, "day": 1},
+    )
+    if open_shift:
+        raise HTTPException(409, "previous_shift_has_no_check_out")
     doc = {
         "id": str(uuid.uuid4()),
         "worker_id": worker_id,
@@ -135,10 +165,10 @@ async def attendance_check_in(worker_id: str, admin: dict = Depends(require_admi
 async def attendance_check_out(worker_id: str, admin: dict = Depends(require_admin)):
     await _worker(worker_id)
     now = datetime.now(timezone.utc)
-    local_day = now.astimezone(TUNIS_TZ).date().isoformat()
     current = await db.attendance.find_one(
-        {"worker_id": worker_id, "day": local_day, "status": "present"},
-        {"_id": 0, "check_in": 1},
+        {"worker_id": worker_id, "status": "present", "check_out": None},
+        {"_id": 0, "day": 1, "check_in": 1},
+        sort=[("day", -1)],
     )
     if not current:
         raise HTTPException(409, "check_in_required_before_check_out")
@@ -146,7 +176,7 @@ async def attendance_check_out(worker_id: str, admin: dict = Depends(require_adm
     if minutes is None:
         raise HTTPException(409, "invalid_shift_duration")
     updated = await db.attendance.find_one_and_update(
-        {"worker_id": worker_id, "day": local_day, "status": "present", "check_out": None},
+        {"worker_id": worker_id, "day": current["day"], "status": "present", "check_out": None},
         {"$set": {"check_out": now, "updated_at": now, "updated_by": admin.get("id")}},
         projection={"_id": 0},
         return_document=ReturnDocument.AFTER,
@@ -165,8 +195,15 @@ async def attendance_mark_absent(
     worker = await _worker(worker_id)
     if body.day > _local_today():
         raise HTTPException(422, "cannot_mark_future_absence")
+    await _ensure_attendance_indexes()
     day = body.day.isoformat()
     now = datetime.now(timezone.utc)
+    open_shift = await db.attendance.find_one(
+        {"worker_id": worker_id, "status": "present", "check_out": None},
+        {"_id": 0, "day": 1},
+    )
+    if open_shift and open_shift.get("day") == day:
+        raise HTTPException(409, "worker_has_open_attendance_record")
     doc = {
         "id": str(uuid.uuid4()),
         "worker_id": worker_id,
