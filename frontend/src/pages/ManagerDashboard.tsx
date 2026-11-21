@@ -37,7 +37,9 @@ type Load = {
   cancelled?: boolean;
   status?: string;
 };
-type AttendanceRecord = { worker_id: string; check_in?: string | null; check_out?: string | null };\ntype AttendanceRow = { id: string; full_name: string; username?: string; status: "absent" | "present" | "completed"; attendance?: AttendanceRecord | null };\ntype AttendanceResponse = { attendance_date: string; workers: AttendanceRow[] };
+type AttendanceRecord = { worker_id: string; check_in?: string | null; check_out?: string | null };
+type AttendanceRow = { id: string; full_name: string; username?: string; status: "absent" | "present" | "completed"; attendance?: AttendanceRecord | null };
+type AttendanceResponse = { attendance_date: string; workers: AttendanceRow[] };
 
 function Metric({ label, value, detail, icon: Icon, tone }: {
   label: string; value: string; detail: string; icon: LucideIcon; tone: string;
@@ -78,7 +80,9 @@ export default function ManagerDashboard() {
   const stats = useQuery({ queryKey: ["manager-dashboard", "stats"], queryFn: () => apiGet<Stats>("/stats"), refetchInterval: 15_000 });
   const loads = useQuery({ queryKey: ["manager-dashboard", "loads"], queryFn: () => apiGet<Load[]>("/loads"), refetchInterval: 15_000 });
   const users = useQuery({ queryKey: ["manager-dashboard", "users"], queryFn: () => apiGet<User[]>("/users"), enabled: !!isAdmin, refetchInterval: 30_000 });
-  const accounting = useQuery({ queryKey: ["manager-dashboard", "accounting"], queryFn: () => apiGet<Overview>("/accounting/overview"), enabled: !!isAdmin, refetchInterval: 30_000, retry: false });\n  const attendance = useQuery({ queryKey: ["manager-dashboard", "attendance"], queryFn: () => apiGet<AttendanceResponse>("/attendance/today"), enabled: !!isAdmin, refetchInterval: 15_000 });\n  const attendanceAction = useMutation({ mutationFn: ({ workerId, action }: { workerId: string; action: "check-in" | "check-out" }) => apiPost<AttendanceRecord>(`/attendance/${encodeURIComponent(workerId)}/${action}`), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["manager-dashboard", "attendance"] }); } });
+  const accounting = useQuery({ queryKey: ["manager-dashboard", "accounting"], queryFn: () => apiGet<Overview>("/accounting/overview"), enabled: !!isAdmin, refetchInterval: 30_000, retry: false });
+  const attendance = useQuery({ queryKey: ["manager-dashboard", "attendance"], queryFn: () => apiGet<AttendanceResponse>("/attendance/today"), enabled: !!isAdmin, refetchInterval: 15_000 });
+  const attendanceAction = useMutation({ mutationFn: ({ workerId, action }: { workerId: string; action: "check-in" | "check-out" }) => apiPost<AttendanceRecord>(`/attendance/${encodeURIComponent(workerId)}/${action}`), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["manager-dashboard", "attendance"] }); } });
 
   if (me.isPending) return <div className="p-6 text-stone-500">{ar ? "جارٍ التحقق من الصلاحيات…" : "Vérification des autorisations…"}</div>;
   if (!isAdmin) return <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-800">{ar ? "هذه اللوحة متاحة للمدير فقط." : "Ce tableau de bord est réservé à l’administrateur."}</div>;
