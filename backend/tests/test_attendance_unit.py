@@ -28,6 +28,10 @@ class FakeUsers:
         return FakeCursor(self.rows)
 
 
+class DuplicateKeyError(Exception):
+    code = 11000
+
+
 class FakeAttendance:
     def __init__(self, rows=None):
         self.rows = list(rows or [])
@@ -38,7 +42,7 @@ class FakeAttendance:
 
     async def insert_one(self, record):
         if any(row["worker_id"] == record["worker_id"] and row["attendance_date"] == record["attendance_date"] for row in self.rows):
-            raise SimpleNamespace(code=11000)
+            raise DuplicateKeyError("duplicate attendance")
         self.rows.append(record.copy())
         return SimpleNamespace(inserted_id="attendance-id")
 
