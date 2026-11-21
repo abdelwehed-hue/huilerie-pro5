@@ -17,6 +17,7 @@ type AttendanceRecord = {
   check_in: string | null;
   check_out: string | null;
   duration_minutes: number | null;
+  duration_review_required?: boolean;
 };
 type AttendanceData = {
   timezone: string;
@@ -126,8 +127,8 @@ export default function AttendanceRegister() {
           weekStart,
           weekEnd,
           minutes: sumMinutes(rows),
-          complete: rows.filter((record) => record.status === "present" && record.check_out).length,
-          incomplete: rows.filter((record) => record.status === "present" && !record.check_out).length,
+          complete: rows.filter((record) => record.status === "present" && record.duration_minutes != null).length,
+          incomplete: rows.filter((record) => record.status === "present" && record.duration_minutes == null).length,
           absent: rows.filter((record) => record.status === "absent").length,
         };
       });
@@ -143,6 +144,7 @@ export default function AttendanceRegister() {
     if (!record) return ar ? "لا يوجد سجل" : "Aucun pointage";
     if (record.status === "absent") return ar ? "غياب مؤكد" : "Absence confirmée";
     if (!record.check_out) return ar ? "حضور دون خروج" : "Présence sans sortie";
+    if (record.duration_review_required) return ar ? "مدة تحتاج مراجعة" : "Durée à vérifier";
     return ar ? "حضور مكتمل" : "Présence complète";
   };
   const hoursFor = (workerId: string, predicate: (record: AttendanceRecord) => boolean) =>
@@ -271,7 +273,7 @@ export default function AttendanceRegister() {
                   <td className="p-2 tabular-nums">{clockLabel(record.check_in)}</td>
                   <td className="p-2 tabular-nums">{clockLabel(record.check_out)}</td>
                   <td className="p-2 tabular-nums">{durationLabel(record.duration_minutes)}</td>
-                  <td className="p-2">{record.status === "absent" ? (ar ? "غياب مؤكد" : "Absence confirmée") : record.check_out ? (ar ? "حضور مكتمل" : "Présence complète") : (ar ? "حضور دون خروج" : "Présence sans sortie")}</td>
+                  <td className="p-2">{record.status === "absent" ? (ar ? "غياب مؤكد" : "Absence confirmée") : record.duration_review_required ? (ar ? "مدة تحتاج مراجعة" : "Durée à vérifier") : record.check_out ? (ar ? "حضور مكتمل" : "Présence complète") : (ar ? "حضور دون خروج" : "Présence sans sortie")}</td>
                 </tr>)}
                 {selectedRecords.length === 0 && <tr><td colSpan={6} className="p-3 text-center text-stone-500">{ar ? "لا توجد سجلات في الفترة المختارة. عدم وجود سجل لا يعني غياباً." : "Aucun pointage. L’absence de pointage ne signifie pas une absence confirmée."}</td></tr>}
               </tbody>
