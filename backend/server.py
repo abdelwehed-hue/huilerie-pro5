@@ -124,7 +124,8 @@ api_router.include_router(campaign_router.router)
 api_router.include_router(tv_router.router)
 api_router.include_router(invoices_router.router)
 api_router.include_router(client_accounts_router.router)
-api_router.include_router(accounting_router.router)\napi_router.include_router(attendance_router.router)
+api_router.include_router(accounting_router.router)
+api_router.include_router(attendance_router.router)
 api_router.include_router(commercial_router.router)
 
 app.add_middleware(
