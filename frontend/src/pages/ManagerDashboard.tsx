@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, AlertTriangle, Banknote, Boxes, CalendarClock, ClipboardList, Factory, RefreshCw, ShoppingBasket, ShoppingCart, Users, Wallet } from "lucide-react";
+import { Activity, AlertTriangle, Boxes, CalendarClock, ClipboardList, Factory, RefreshCw, ShoppingBasket, ShoppingCart, Users, Wallet, type LucideIcon } from "lucide-react";
 import { apiGet } from "@/lib/api";
 import { fmtMoney, fmtNum, useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/useMe";
@@ -40,7 +40,7 @@ type Load = {
 type User = { id: string; role: string; active: boolean; full_name: string };
 
 function Metric({ label, value, detail, icon: Icon, tone }: {
-  label: string; value: string; detail: string; icon: typeof Activity; tone: string;
+  label: string; value: string; detail: string; icon: LucideIcon; tone: string;
 }) {
   return <section className={`min-w-0 rounded-2xl border p-4 shadow-sm ${tone}`}>
     <div className="flex items-start justify-between gap-2">
@@ -53,7 +53,7 @@ function Metric({ label, value, detail, icon: Icon, tone }: {
 }
 
 function SummaryPanel({ title, icon: Icon, total, paid, remaining, labels, tone }: {
-  title: string; icon: typeof ShoppingBasket; total: string; paid: string; remaining: string;
+  title: string; icon: LucideIcon; total: string; paid: string; remaining: string;
   labels: { total: string; paid: string; remaining: string }; tone: string;
 }) {
   return <section className={`min-w-0 rounded-2xl border bg-white p-4 shadow-sm ${tone}`}>
