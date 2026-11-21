@@ -192,7 +192,7 @@ export default function Commercial({ embeddedStockView }: { embeddedStockView?: 
   const [tab, setTab] = useState<TabKey>(embeddedStockView ? "stock" : initialTab);
   const [stockView, setStockView] = useState<"lots" | "movements" | "chargement">(embeddedStockView ?? (requestedTab === "movements" ? "movements" : "lots"));
   const [procurementView, setProcurementView] = useState<"suppliers" | "purchases" | "customer-purchases">(requestedTab === "customer-purchases" ? "customer-purchases" : requestedTab === "purchases" ? "purchases" : "suppliers");
-  const [salesView, setSalesView] = useState<"buyers" | "sales">("buyers");
+  const [salesView, setSalesView] = useState<"buyers" | "sales">(requestedTab === "sales" ? "sales" : "buyers");
   const selectTab = (nextTab: TabKey) => {
     const targetTab = nextTab === "lots" || nextTab === "movements" || nextTab === "chargement" ? "stock" : nextTab === "suppliers" || nextTab === "purchases" || nextTab === "customer-purchases" ? "procurement" : nextTab === "buyers" ? "sales" : nextTab;
     if (nextTab === "lots" || nextTab === "movements" || nextTab === "chargement") setStockView(nextTab);
