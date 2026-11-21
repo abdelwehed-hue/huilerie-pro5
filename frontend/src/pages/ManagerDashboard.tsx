@@ -24,6 +24,7 @@ type Stats = {
   today: string;
   season: string;
   loads_today: number;
+  loads_total: number;
   pending: number;
   olive_kg_today: number;
   oil_kg_today: number;
@@ -33,12 +34,6 @@ type Stats = {
   revenue_total?: number;
 };
 type WorkerUser = { id: string; role: string; active: boolean; full_name: string };
-type Load = {
-  id: string;
-  oil_kg?: number | null;
-  cancelled?: boolean;
-  status?: string;
-};
 
 function Metric({ label, value, detail, icon: Icon, tone, to }: {
   label: string; value: string; detail: string; icon: LucideIcon; tone: string; to: string;
@@ -80,7 +75,6 @@ export default function ManagerDashboard() {
   const me = useMe();
   const isAdmin = me.data?.role === "admin";
   const stats = useQuery({ queryKey: ["manager-dashboard", "stats"], queryFn: () => apiGet<Stats>("/stats"), enabled: !!isAdmin, refetchInterval: 15_000 });
-  const loads = useQuery({ queryKey: ["manager-dashboard", "loads"], queryFn: () => apiGet<Load[]>("/loads"), enabled: !!isAdmin, refetchInterval: 15_000 });
   const users = useQuery({ queryKey: ["manager-dashboard", "users"], queryFn: () => apiGet<WorkerUser[]>("/users"), enabled: !!isAdmin, refetchInterval: 30_000 });
   const accounting = useQuery({ queryKey: ["manager-dashboard", "accounting"], queryFn: () => apiGet<Overview>("/accounting/overview"), enabled: !!isAdmin, refetchInterval: 30_000, retry: false });
 
@@ -94,15 +88,12 @@ export default function ManagerDashboard() {
   const purchaseRemaining = Number(summary?.supplier_olive_outstanding_total ?? Math.max(0, purchaseTotal - purchasePaid));
   const salesTotal = Number(summary?.gs_sales_revenue_total ?? 0);
   const salesPaid = Number(summary?.gs_sales_collected_total ?? 0);
-  const salesRemaining = Math.max(0, salesTotal - salesPaid);
-  const currentLoads = (loads.data ?? []).filter((load) => !load.cancelled);
-  const pendingLoads = currentLoads.filter((load) => load.oil_kg == null).length;
-  const completedLoads = currentLoads.filter((load) => load.oil_kg != null).length;
-  const loading = stats.isPending || loads.isPending || accounting.isPending || users.isPending;
-  const failed = stats.isError || loads.isError || accounting.isError || users.isError;
+  const salesRemaining = salesTotal - salesPaid;
+  const loading = stats.isPending || accounting.isPending || users.isPending;
+  const failed = stats.isError || accounting.isError || users.isError;
   const activeWorkers = (users.data ?? []).filter((worker) => worker.role === "worker" && worker.active);
   const money = (v: unknown) => fmtMoney(Number(v ?? 0));
-  const refresh = () => { void Promise.all([stats.refetch(), loads.refetch(), users.refetch(), accounting.refetch()]); };
+  const refresh = () => { void Promise.all([stats.refetch(), users.refetch(), accounting.refetch()]); };
 
   return <div className="mx-auto max-w-[1600px] space-y-4 pb-6" data-testid="manager-dashboard">
     <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-[#101C2B] px-5 py-4 text-white shadow-lg">
@@ -151,7 +142,7 @@ export default function ManagerDashboard() {
       </section>
       <Link to="/loads" className="block rounded-2xl outline-none transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-sky-500"><section className="rounded-2xl border bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2 text-stone-700"><CalendarClock className="size-5 text-orange-700" /><h2 className="font-bold">{ar ? "حالة الحمولات" : "État des chargements"}</h2></div>
-        <div className="mt-3 grid grid-cols-2 gap-3"><div><p className="text-2xl font-bold">{loads.data ? pendingLoads : "—"}</p><p className="text-xs text-stone-500">{ar ? "قيد المعالجة" : "En attente"}</p></div><div><p className="text-2xl font-bold">{loads.data ? completedLoads : "—"}</p><p className="text-xs text-stone-500">{ar ? "اكتملت" : "Terminés"}</p></div></div>
+        <div className="mt-3 grid grid-cols-2 gap-3"><div><p className="text-2xl font-bold">{s ? fmtNum(s.pending) : "—"}</p><p className="text-xs text-stone-500">{ar ? "قيد المعالجة" : "En attente"}</p></div><div><p className="text-2xl font-bold">{s ? fmtNum(s.loads_total - s.pending) : "—"}</p><p className="text-xs text-stone-500">{ar ? "اكتملت" : "Terminés"}</p></div></div>
       </section></Link>
       <Link to="/factures" className="block rounded-2xl outline-none transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-sky-500"><section className="rounded-2xl border bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2 text-stone-700"><ClipboardList className="size-5 text-indigo-700" /><h2 className="font-bold">{ar ? "الفواتير" : "Factures"}</h2></div>
