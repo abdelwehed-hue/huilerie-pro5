@@ -94,6 +94,10 @@ async def _ensure_attendance_indexes() -> None:
         [("day", ASCENDING), ("worker_name", ASCENDING)],
         name="day_worker",
     )
+    await db.attendance.create_index(
+        [("worker_id", ASCENDING), ("status", ASCENDING), ("check_out", ASCENDING)],
+        name="worker_open_shift",
+    )
 
 
 @router.get("/attendance")
