@@ -83,16 +83,20 @@ export default function ManagerDashboard() {
 
   const s = stats.data;
   const summary = accounting.data?.summary;
-  const purchaseTotal = Number(summary?.supplier_olive_purchase_total ?? 0);
-  const purchasePaid = Number(summary?.supplier_olive_paid_total ?? 0);
-  const purchaseRemaining = Number(summary?.supplier_olive_outstanding_total ?? Math.max(0, purchaseTotal - purchasePaid));
-  const salesTotal = Number(summary?.gs_sales_revenue_total ?? 0);
-  const salesPaid = Number(summary?.gs_sales_collected_total ?? 0);
-  const salesRemaining = salesTotal - salesPaid;
+  const purchaseTotal = summary?.supplier_olive_purchase_total;
+  const purchasePaid = summary?.supplier_olive_paid_total;
+  const purchaseRemaining = summary?.supplier_olive_outstanding_total
+    ?? (purchaseTotal != null && purchasePaid != null ? Number(purchaseTotal) - Number(purchasePaid) : null);
+  const salesTotal = summary?.gs_sales_revenue_total;
+  const salesPaid = summary?.gs_sales_collected_total;
+  const salesRemaining = salesTotal != null && salesPaid != null
+    ? Number(salesTotal) - Number(salesPaid)
+    : null;
   const loading = stats.isPending || accounting.isPending || users.isPending;
   const failed = stats.isError || accounting.isError || users.isError;
   const activeWorkers = (users.data ?? []).filter((worker) => worker.role === "worker" && worker.active);
   const money = (v: unknown) => fmtMoney(Number(v ?? 0));
+  const moneyOrDash = (v: unknown) => v == null ? "—" : money(v);
   const refresh = () => { void Promise.all([stats.refetch(), users.refetch(), accounting.refetch()]); };
 
   return <div className="mx-auto max-w-[1600px] space-y-4 pb-6" data-testid="manager-dashboard">
@@ -116,10 +120,10 @@ export default function ManagerDashboard() {
 
     <div className="grid gap-3 lg:grid-cols-2">
       <SummaryPanel title={ar ? "شراء الزيتون من المزودين" : "Achats d’olives auprès des fournisseurs"} icon={ShoppingBasket}
-        total={accounting.data ? money(purchaseTotal) : "—"} paid={accounting.data ? money(purchasePaid) : "—"} remaining={accounting.data ? money(purchaseRemaining) : "—"}
+        total={moneyOrDash(purchaseTotal)} paid={moneyOrDash(purchasePaid)} remaining={moneyOrDash(purchaseRemaining)}
         labels={{ total: ar ? "قيمة المشتريات" : "Achats approuvés", paid: ar ? "المدفوع" : "Payé", remaining: ar ? "المتبقي" : "À payer" }} tone="border-emerald-200" to="/commercial?tab=purchases" />
       <SummaryPanel title={ar ? "بيع الزيت للحرفاء" : "Ventes d’huile aux clients"} icon={ShoppingCart}
-        total={accounting.data ? money(salesTotal) : "—"} paid={accounting.data ? money(salesPaid) : "—"} remaining={accounting.data ? money(salesRemaining) : "—"}
+        total={moneyOrDash(salesTotal)} paid={moneyOrDash(salesPaid)} remaining={moneyOrDash(salesRemaining)}
         labels={{ total: ar ? "صافي المبيعات" : "Ventes nettes", paid: ar ? "المقبوض" : "Encaissé", remaining: ar ? "المتبقي" : "À encaisser" }} tone="border-blue-200" to="/commercial?tab=sales" />
     </div>
 
