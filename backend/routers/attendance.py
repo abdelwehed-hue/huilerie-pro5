@@ -66,6 +66,7 @@ def _record_out(doc: dict) -> dict:
         "check_in": check_in,
         "check_out": check_out,
         "duration_minutes": minutes,
+        "duration_review_required": bool(check_in and check_out and minutes is None),
         "created_at": doc["created_at"],
         "updated_at": doc["updated_at"],
     }
@@ -181,8 +182,10 @@ async def attendance_check_out(worker_id: str, admin: dict = Depends(require_adm
     )
     if not current:
         raise HTTPException(409, "check_in_required_before_check_out")
-    minutes = _minutes_between(current["check_in"], now)
-    if minutes is None:
+    check_in = current["check_in"]
+    if check_in.tzinfo is None:
+        check_in = check_in.replace(tzinfo=timezone.utc)
+    if now <= check_in:
         raise HTTPException(409, "invalid_shift_duration")
     updated = await db.attendance.find_one_and_update(
         {"worker_id": worker_id, "day": current["day"], "status": "present", "check_out": None},
