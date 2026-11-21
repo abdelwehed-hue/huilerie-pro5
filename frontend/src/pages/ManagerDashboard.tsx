@@ -126,10 +126,10 @@ export default function ManagerDashboard() {
     <div className="grid gap-3 lg:grid-cols-2">
       <SummaryPanel title={ar ? "شراء الزيتون من المزودين" : "Achats d’olives auprès des fournisseurs"} icon={ShoppingBasket}
         total={accounting.data ? money(purchaseTotal) : "—"} paid={accounting.data ? money(purchasePaid) : "—"} remaining={accounting.data ? money(purchaseRemaining) : "—"}
-        labels={{ total: ar ? "قيمة المشتريات" : "Achats approuvés", paid: ar ? "المدفوع" : "Payé", remaining: ar ? "المتبقي" : "À payer" }} tone="border-emerald-200" to="/commercial" />
+        labels={{ total: ar ? "قيمة المشتريات" : "Achats approuvés", paid: ar ? "المدفوع" : "Payé", remaining: ar ? "المتبقي" : "À payer" }} tone="border-emerald-200" to="/commercial?tab=purchases" />
       <SummaryPanel title={ar ? "بيع الزيت للحرفاء" : "Ventes d’huile aux clients"} icon={ShoppingCart}
         total={accounting.data ? money(salesTotal) : "—"} paid={accounting.data ? money(salesPaid) : "—"} remaining={accounting.data ? money(salesRemaining) : "—"}
-        labels={{ total: ar ? "صافي المبيعات" : "Ventes nettes", paid: ar ? "المقبوض" : "Encaissé", remaining: ar ? "المتبقي" : "À encaisser" }} tone="border-blue-200" to="/commercial" />
+        labels={{ total: ar ? "صافي المبيعات" : "Ventes nettes", paid: ar ? "المقبوض" : "Encaissé", remaining: ar ? "المتبقي" : "À encaisser" }} tone="border-blue-200" to="/commercial?tab=sales" />
     </div>
 
     <div className="grid gap-3 md:grid-cols-3">
