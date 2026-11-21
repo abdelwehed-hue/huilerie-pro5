@@ -31,6 +31,7 @@ type Stats = {
   revenue_today?: number;
   revenue_total?: number;
 };
+type WorkerUser = { id: string; role: string; active: boolean; full_name: string };
 type Load = {
   id: string;
   oil_kg?: number | null;
@@ -79,7 +80,7 @@ export default function ManagerDashboard() {
   const isAdmin = me.data?.role === "admin";
   const stats = useQuery({ queryKey: ["manager-dashboard", "stats"], queryFn: () => apiGet<Stats>("/stats"), refetchInterval: 15_000 });
   const loads = useQuery({ queryKey: ["manager-dashboard", "loads"], queryFn: () => apiGet<Load[]>("/loads"), refetchInterval: 15_000 });
-  const users = useQuery({ queryKey: ["manager-dashboard", "users"], queryFn: () => apiGet<User[]>("/users"), enabled: !!isAdmin, refetchInterval: 30_000 });
+  const users = useQuery({ queryKey: ["manager-dashboard", "users"], queryFn: () => apiGet<WorkerUser[]>("/users"), enabled: !!isAdmin, refetchInterval: 30_000 });
   const accounting = useQuery({ queryKey: ["manager-dashboard", "accounting"], queryFn: () => apiGet<Overview>("/accounting/overview"), enabled: !!isAdmin, refetchInterval: 30_000, retry: false });
   const attendance = useQuery({ queryKey: ["manager-dashboard", "attendance"], queryFn: () => apiGet<AttendanceResponse>("/attendance/today"), enabled: !!isAdmin, refetchInterval: 15_000 });
   const attendanceAction = useMutation({ mutationFn: ({ workerId, action }: { workerId: string; action: "check-in" | "check-out" }) => apiPost<AttendanceRecord>(`/attendance/${encodeURIComponent(workerId)}/${action}`), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["manager-dashboard", "attendance"] }); } });
