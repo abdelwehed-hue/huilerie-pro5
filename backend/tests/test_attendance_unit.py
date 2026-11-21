@@ -87,7 +87,7 @@ async def test_today_attendance_lists_active_workers_and_status(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_check_in_records_tunis_local_time_and_duplicate_is_conflict(monkeypatch):
-    users = FakeUsers([{"id": "worker-1", "full_name": "Worker One"}])
+    users = FakeUsers([{"id": "worker-1", "full_name": "Worker One", "role": "worker", "active": True}])
     records = FakeAttendance()
     monkeypatch.setattr(attendance, "_now", fixed_now)
     monkeypatch.setattr(attendance, "db", SimpleNamespace(users=users, worker_attendance=records))
