@@ -19,7 +19,7 @@ from lib.security_config import auth_is_disabled, cors_origins, is_production, v
 from lib.reminders import reminder_loop
 from lib.season import migrate_season_ids
 from commercial import routers as commercial_router
-from routers import attendance as attendance_router, auth as auth_router, loads as loads_router, lab as lab_router, admin as admin_router, extras as extras_router, campaign as campaign_router, tv as tv_router, invoices as invoices_router, client_accounts as client_accounts_router, accounting as accounting_router
+from routers import auth as auth_router, loads as loads_router, lab as lab_router, admin as admin_router, extras as extras_router, campaign as campaign_router, tv as tv_router, invoices as invoices_router, client_accounts as client_accounts_router, accounting as accounting_router
 
 
 @asynccontextmanager
@@ -115,7 +115,6 @@ async def root():
     return {"message": "Huilerie API"}
 
 
-api_router.include_router(attendance_router.router)
 api_router.include_router(auth_router.router)
 api_router.include_router(loads_router.router)
 api_router.include_router(lab_router.router)
