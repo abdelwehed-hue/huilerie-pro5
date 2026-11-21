@@ -27,6 +27,9 @@ class FakeUsers:
         assert query == {"role": "worker", "active": True}
         return FakeCursor(self.rows)
 
+    async def find_one(self, query, projection=None):
+        return next((row.copy() for row in self.rows if all(row.get(key) == value for key, value in query.items())), None)
+
 
 class DuplicateKeyError(Exception):
     code = 11000
