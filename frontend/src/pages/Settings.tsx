@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { KeyRound, ShieldAlert, UserPlus, Users, Coins, MessageSquareText, Pencil, Trash2, CalendarRange, LogIn, ClipboardList, Warehouse, Fuel, Eye } from "lucide-react";
+import { KeyRound, ShieldAlert, UserPlus, Users, Coins, MessageSquareText, Pencil, Trash2, CalendarRange, LogIn, ClipboardList, Warehouse, Fuel, Eye, LayoutDashboard } from "lucide-react";
 import SmsSettings from "@/components/SmsSettings";
 import LoginImageSettings from "@/components/LoginImageSettings";
 import TwilioSettings from "@/components/TwilioSettings";
@@ -699,7 +700,12 @@ export default function SettingsPage() {
     );
   }
   return (
-    <div>
+    <div className="space-y-5">
+      <Link to="/manager" data-testid="settings-manager-dashboard-link" className="group flex items-center gap-4 rounded-2xl border border-slate-700 bg-[#101C2B] p-4 text-white shadow-md transition-colors hover:bg-[#17283B]">
+        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-teal-400/15 text-teal-300"><LayoutDashboard className="size-6" /></span>
+        <span className="min-w-0 flex-1"><span className="block font-bold">{lang === "ar" ? "لوحة المدير" : "Tableau de bord du directeur"}</span><span className="mt-1 block text-sm text-slate-300">{lang === "ar" ? "مراقبة العمال والإنتاج والمشتريات والمبيعات والمحاسبة من شاشة واحدة" : "Suivi des employés, de la production, des achats, des ventes et de la comptabilité sur un seul écran"}</span></span>
+        <span className="text-teal-300 transition-transform group-hover:-translate-x-1">←</span>
+      </Link>
       <Tabs defaultValue="users">
         <PageHeader title={t("settings")} accent="bg-violet-500" right={
           <div className="flex w-full min-w-0 -translate-y-8 justify-end self-start">
