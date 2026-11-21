@@ -11,6 +11,7 @@ on:
       - feature/commercial-audit
       - feature/comptabilite
       - audit/erp-foundation
+      - test/main-baseline-2026-11-20
   pull_request:
     branches:
       - main
