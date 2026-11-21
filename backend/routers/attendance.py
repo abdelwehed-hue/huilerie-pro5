@@ -124,7 +124,10 @@ async def attendance_register(
     query_start = min(start, date(today.year, today.month, 1), week_start)
     query_end = max(end, month_end, week_end)
     records = await db.attendance.find(
-        {"day": {"$gte": query_start.isoformat(), "$lte": query_end.isoformat()}},
+        {"$or": [
+            {"day": {"$gte": query_start.isoformat(), "$lte": query_end.isoformat()}},
+            {"status": "present", "check_out": None},
+        ]},
         {"_id": 0},
     ).sort([("day", 1), ("worker_name", 1)]).to_list(20000)
     return {
