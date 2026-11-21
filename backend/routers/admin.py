@@ -24,7 +24,7 @@ def _user(doc: dict) -> User:
 # Collections containing operational/test records. Configuration, users, and
 # both numbering sequences are intentionally excluded from this reset.
 RESET_DATA_COLLECTIONS = (
-    "loads", "lab", "invoices", "clients", "sms_log",
+    "loads", "lab", "invoices", "clients", "sms_log", "attendance",
     "commercial_suppliers", "commercial_buyers", "commercial_custody_owners",
     "commercial_olive_purchases", "commercial_oil_purchase_documents",
     "commercial_oil_purchase_payments", "commercial_sales",
