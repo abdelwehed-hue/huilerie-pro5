@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { Activity, AlertTriangle, Boxes, CalendarClock, ClipboardList, Factory, RefreshCw, ShoppingBasket, ShoppingCart, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Activity, AlertTriangle, Boxes, CalendarClock, ClipboardList, Factory, RefreshCw, ShoppingBasket, ShoppingCart, Wallet, type LucideIcon } from "lucide-react";
 import { apiGet } from "@/lib/api";
 import { fmtMoney, fmtNum, useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/useMe";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import AttendanceRegister from "@/components/AttendanceRegister";
 
 type Row = Record<string, any>;
 type Overview = {
@@ -33,7 +34,6 @@ type Stats = {
   revenue_today?: number;
   revenue_total?: number;
 };
-type WorkerUser = { id: string; role: string; active: boolean; full_name: string };
 
 function Metric({ label, value, detail, icon: Icon, tone, to }: {
   label: string; value: string; detail: string; icon: LucideIcon; tone: string; to: string;
@@ -75,7 +75,6 @@ export default function ManagerDashboard() {
   const me = useMe();
   const isAdmin = me.data?.role === "admin";
   const stats = useQuery({ queryKey: ["manager-dashboard", "stats"], queryFn: () => apiGet<Stats>("/stats"), enabled: !!isAdmin, refetchInterval: 15_000 });
-  const users = useQuery({ queryKey: ["manager-dashboard", "users"], queryFn: () => apiGet<WorkerUser[]>("/users"), enabled: !!isAdmin, refetchInterval: 30_000 });
   const accounting = useQuery({ queryKey: ["manager-dashboard", "accounting"], queryFn: () => apiGet<Overview>("/accounting/overview"), enabled: !!isAdmin, refetchInterval: 30_000, retry: false });
 
   if (me.isPending) return <div className="p-6 text-stone-500">{ar ? "جارٍ التحقق من الصلاحيات…" : "Vérification des autorisations…"}</div>;
@@ -92,12 +91,11 @@ export default function ManagerDashboard() {
   const salesRemaining = salesTotal != null && salesPaid != null
     ? Number(salesTotal) - Number(salesPaid)
     : null;
-  const loading = stats.isPending || accounting.isPending || users.isPending;
-  const failed = stats.isError || accounting.isError || users.isError;
-  const activeWorkers = (users.data ?? []).filter((worker) => worker.role === "worker" && worker.active);
+  const loading = stats.isPending || accounting.isPending;
+  const failed = stats.isError || accounting.isError;
   const money = (v: unknown) => fmtMoney(Number(v ?? 0));
   const moneyOrDash = (v: unknown) => v == null ? "—" : money(v);
-  const refresh = () => { void Promise.all([stats.refetch(), users.refetch(), accounting.refetch()]); };
+  const refresh = () => { void Promise.all([stats.refetch(), accounting.refetch()]); };
 
   return <div className="mx-auto max-w-[1600px] space-y-4 pb-6" data-testid="manager-dashboard">
     <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-[#101C2B] px-5 py-4 text-white shadow-lg">
@@ -128,22 +126,7 @@ export default function ManagerDashboard() {
     </div>
 
     <div className="grid gap-3 md:grid-cols-3">
-      <section className="rounded-2xl border bg-white p-4 shadow-sm md:col-span-3">
-        <div className="mb-3 flex items-center gap-2 text-stone-700"><Users className="size-5 text-sky-700" /><h2 className="font-bold">{ar ? "العمال النشطون" : "Employés actifs"}</h2></div>
-        {users.isError && <p className="mb-2 text-sm text-rose-700">{ar ? "تعذر تحميل قائمة العمال." : "Impossible de charger les employés."}</p>}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b text-start text-xs text-stone-500"><th className="p-2 text-start">{ar ? "العامل" : "Employé"}</th><th className="p-2 text-start">{ar ? "الحالة" : "Statut"}</th></tr></thead>
-            <tbody>
-              {activeWorkers.map((worker) => <tr key={worker.id} className="border-b last:border-0">
-                <td className="p-2 font-medium">{worker.full_name}</td>
-                <td className="p-2"><span className="font-medium text-stone-500">{ar ? "الحضور غير مسجل في التطبيق" : "Présence non enregistrée dans l’application"}</span></td>
-              </tr>)}
-              {users.data && activeWorkers.length === 0 && <tr><td colSpan={2} className="p-4 text-center text-sm text-stone-500">{ar ? "لا توجد حسابات عمال نشطة." : "Aucun employé actif."}</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <div className="md:col-span-3"><AttendanceRegister /></div>
       <Link to="/loads" className="block rounded-2xl outline-none transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-sky-500"><section className="rounded-2xl border bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2 text-stone-700"><CalendarClock className="size-5 text-orange-700" /><h2 className="font-bold">{ar ? "حالة الحمولات" : "État des chargements"}</h2></div>
         <div className="mt-3 grid grid-cols-2 gap-3"><div><p className="text-2xl font-bold">{s ? fmtNum(s.pending) : "—"}</p><p className="text-xs text-stone-500">{ar ? "قيد المعالجة" : "En attente"}</p></div><div><p className="text-2xl font-bold">{s ? fmtNum(s.loads_total - s.pending) : "—"}</p><p className="text-xs text-stone-500">{ar ? "اكتملت" : "Terminés"}</p></div></div>
