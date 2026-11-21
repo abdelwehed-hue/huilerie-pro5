@@ -79,8 +79,8 @@ export default function ManagerDashboard() {
   const ar = lang === "ar";
   const me = useMe();
   const isAdmin = me.data?.role === "admin";
-  const stats = useQuery({ queryKey: ["manager-dashboard", "stats"], queryFn: () => apiGet<Stats>("/stats"), refetchInterval: 15_000 });
-  const loads = useQuery({ queryKey: ["manager-dashboard", "loads"], queryFn: () => apiGet<Load[]>("/loads"), refetchInterval: 15_000 });
+  const stats = useQuery({ queryKey: ["manager-dashboard", "stats"], queryFn: () => apiGet<Stats>("/stats"), enabled: !!isAdmin, refetchInterval: 15_000 });
+  const loads = useQuery({ queryKey: ["manager-dashboard", "loads"], queryFn: () => apiGet<Load[]>("/loads"), enabled: !!isAdmin, refetchInterval: 15_000 });
   const users = useQuery({ queryKey: ["manager-dashboard", "users"], queryFn: () => apiGet<WorkerUser[]>("/users"), enabled: !!isAdmin, refetchInterval: 30_000 });
   const accounting = useQuery({ queryKey: ["manager-dashboard", "accounting"], queryFn: () => apiGet<Overview>("/accounting/overview"), enabled: !!isAdmin, refetchInterval: 30_000, retry: false });
 
