@@ -101,6 +101,17 @@ export default function AttendanceRegister() {
     return map;
   }, [data?.records]);
 
+  const openShiftByWorker = useMemo(() => {
+    const map = new Map<string, AttendanceRecord>();
+    for (const record of data?.records ?? []) {
+      if (record.status === "present" && !record.check_out) {
+        const previous = map.get(record.worker_id);
+        if (!previous || record.day > previous.day) map.set(record.worker_id, record);
+      }
+    }
+    return map;
+  }, [data?.records]);
+
   const weekStarts = useMemo(() => {
     if (!startDate || !endDate) return [];
     const weeks: string[] = [];
@@ -141,7 +152,11 @@ export default function AttendanceRegister() {
 
   const todayStatus = (workerId: string) => {
     const record = recordsByWorkerDay.get(`${workerId}|${data?.today}`);
-    if (!record) return ar ? "لا يوجد سجل" : "Aucun pointage";
+    if (!record) {
+      const openShift = openShiftByWorker.get(workerId);
+      if (openShift) return ar ? "وردية مفتوحة منذ " + openShift.day : "Service ouvert depuis le " + openShift.day;
+      return ar ? "لا يوجد سجل" : "Aucun pointage";
+    }
     if (record.status === "absent") return ar ? "غياب مؤكد" : "Absence confirmée";
     if (!record.check_out) return ar ? "حضور دون خروج" : "Présence sans sortie";
     if (record.duration_review_required) return ar ? "مدة تحتاج مراجعة" : "Durée à vérifier";
@@ -215,8 +230,8 @@ export default function AttendanceRegister() {
                   <td className="p-2 tabular-nums font-semibold">{durationLabel(rangeMinutes)}</td>
                   <td className="p-2">
                     <div className="flex flex-wrap gap-1">
-                      {!todayRecord && <Button size="sm" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-in" })}><LogIn className="me-1 size-3" />{ar ? "دخول" : "Entrée"}</Button>}
-                      {todayRecord?.status === "present" && !todayRecord.check_out && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-out" })}><LogOut className="me-1 size-3" />{ar ? "خروج" : "Sortie"}</Button>}
+                      {openShiftByWorker.has(worker.id) && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-out" })}><LogOut className="me-1 size-3" />{ar ? "خروج" : "Sortie"}</Button>}
+                      {!todayRecord && !openShiftByWorker.has(worker.id) && <Button size="sm" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-in" })}><LogIn className="me-1 size-3" />{ar ? "دخول" : "Entrée"}</Button>}
                       {!recordsByWorkerDay.has(`${worker.id}|${absenceDate}`) && absenceDate && absenceDate >= startDate && absenceDate <= endDate && absenceDate <= data.today && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "absence", day: absenceDate })}>{ar ? "غياب" : "Absent"}</Button>}
                     </div>
                   </td>
