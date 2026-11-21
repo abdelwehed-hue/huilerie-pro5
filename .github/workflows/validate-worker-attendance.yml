@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/worker-attendance
+      - main
   pull_request:
     branches:
       - feature/manager-dashboard
