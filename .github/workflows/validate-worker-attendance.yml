@@ -3,11 +3,11 @@ on:
   push:
     branches:
       - feature/worker-attendance
-      - main
   pull_request:
     branches:
       - feature/manager-dashboard
       - feature/worker-attendance
+      - main
 
 jobs:
   backend-attendance-tests:
