@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - feature/manager-dashboard
+      - feature/worker-attendance
 
 jobs:
   backend-attendance-tests:
@@ -27,7 +28,7 @@ jobs:
       - name: Compile backend
         run: python -m compileall -q .
       - name: Test attendance calculation rules
-        run: python -m pytest -o addopts= tests/test_attendance_rules_unit.py
+        run: python -m pytest -o addopts= tests/test_attendance_rules_unit.py tests/test_attendance_auth_guard.py
 
   frontend-build:
     runs-on: ubuntu-latest
