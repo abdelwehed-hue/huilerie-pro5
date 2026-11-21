@@ -70,7 +70,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install attendance test dependencies
-        run: python -m pip install fastapi pymongo motor python-dotenv pyjwt passlib pytest pytest-asyncio pytest-xdist
+        run: python -m pip install fastapi pymongo motor python-dotenv pyjwt passlib pytest pytest-asyncio pytest-xdist httpx
       - name: Test manager attendance endpoints
         run: python -m pytest -o addopts= tests/test_attendance_unit.py
 
