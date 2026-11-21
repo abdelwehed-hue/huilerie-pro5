@@ -209,8 +209,8 @@ export default function AttendanceRegister() {
               <th className="p-2 text-start">{ar ? "العامل" : "Employé"}</th>
               <th className="p-2 text-start">{ar ? "حالة اليوم" : "Statut du jour"}</th>
               <th className="p-2 text-start">{ar ? "اليوم" : "Aujourd’hui"}</th>
-              <th className="p-2 text-start">{ar ? "الأسبوع" : "Semaine"}</th>
-              <th className="p-2 text-start">{ar ? "الشهر" : "Mois"}</th>
+              <th className="p-2 text-start">{ar ? "الأسبوع الحالي" : "Cette semaine"}</th>
+              <th className="p-2 text-start">{ar ? "الشهر الحالي" : "Ce mois-ci"}</th>
               <th className="p-2 text-start">{ar ? "الفترة المختارة" : "Période choisie"}</th>
               <th className="p-2 text-start">{ar ? "إجراء" : "Action"}</th>
             </tr></thead>
