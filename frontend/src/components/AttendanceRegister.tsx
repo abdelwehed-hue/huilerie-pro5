@@ -94,7 +94,10 @@ export default function AttendanceRegister() {
   });
 
   const data = attendance.data;
-  const activeWorkers = useMemo(() => (data?.workers ?? []).filter((worker) => worker.active), [data?.workers]);
+  const workersToShow = useMemo(() => {
+    const recordedWorkerIds = new Set((data?.records ?? []).map((record) => record.worker_id));
+    return (data?.workers ?? []).filter((worker) => worker.active || recordedWorkerIds.has(worker.id));
+  }, [data?.workers, data?.records]);
   const recordsByWorkerDay = useMemo(() => {
     const map = new Map<string, AttendanceRecord>();
     for (const record of data?.records ?? []) map.set(`${record.worker_id}|${record.day}`, record);
@@ -128,7 +131,7 @@ export default function AttendanceRegister() {
     if (!data) return [];
     return weekStarts.flatMap((weekStart) => {
       const weekEnd = addDays(weekStart, 6);
-      return activeWorkers.map((worker) => {
+      return workersToShow.map((worker) => {
         const rows = data.records.filter((record) =>
           record.worker_id === worker.id && record.day >= (weekStart < startDate ? startDate : weekStart) && record.day <= (weekEnd > endDate ? endDate : weekEnd)
         );
@@ -144,7 +147,7 @@ export default function AttendanceRegister() {
         };
       });
     });
-  }, [data, weekStarts, activeWorkers, startDate, endDate]);
+  }, [data, weekStarts, workersToShow, startDate, endDate]);
 
   const selectedRecords = useMemo(() => (data?.records ?? []).filter((record) =>
     record.day >= startDate && record.day <= endDate
@@ -215,14 +218,14 @@ export default function AttendanceRegister() {
               <th className="p-2 text-start">{ar ? "إجراء" : "Action"}</th>
             </tr></thead>
             <tbody>
-              {activeWorkers.map((worker) => {
+              {workersToShow.map((worker) => {
                 const todayRecord = recordsByWorkerDay.get(`${worker.id}|${data.today}`);
                 const todayMinutes = hoursFor(worker.id, (record) => record.day === data.today);
                 const weekMinutes = hoursFor(worker.id, (record) => record.day >= currentWeekStart && record.day <= data.today);
                 const monthMinutes = hoursFor(worker.id, (record) => record.day.slice(0, 7) === currentMonth);
                 const rangeMinutes = hoursFor(worker.id, (record) => record.day >= startDate && record.day <= endDate);
                 return <tr key={worker.id} className="border-b last:border-0">
-                  <td className="p-2 font-medium">{worker.full_name}</td>
+                  <td className="p-2 font-medium">{worker.full_name}{!worker.active && <span className="ms-2 text-xs text-stone-400">{ar ? "غير نشط" : "Inactif"}</span>}</td>
                   <td className="p-2"><span className={todayRecord?.status === "absent" ? "text-rose-700" : todayRecord?.check_out ? "text-emerald-700" : "text-stone-600"}>{todayStatus(worker.id)}</span></td>
                   <td className="p-2 tabular-nums">{durationLabel(todayMinutes)}</td>
                   <td className="p-2 tabular-nums">{durationLabel(weekMinutes)}</td>
@@ -231,13 +234,13 @@ export default function AttendanceRegister() {
                   <td className="p-2">
                     <div className="flex flex-wrap gap-1">
                       {openShiftByWorker.has(worker.id) && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-out" })}><LogOut className="me-1 size-3" />{ar ? "خروج" : "Sortie"}</Button>}
-                      {!todayRecord && !openShiftByWorker.has(worker.id) && <Button size="sm" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-in" })}><LogIn className="me-1 size-3" />{ar ? "دخول" : "Entrée"}</Button>}
-                      {!recordsByWorkerDay.has(`${worker.id}|${absenceDate}`) && !openShiftByWorker.has(worker.id) && absenceDate && absenceDate >= startDate && absenceDate <= endDate && absenceDate <= data.today && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "absence", day: absenceDate })}>{ar ? "غياب" : "Absent"}</Button>}
+                      {worker.active && !todayRecord && !openShiftByWorker.has(worker.id) && <Button size="sm" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "check-in" })}><LogIn className="me-1 size-3" />{ar ? "دخول" : "Entrée"}</Button>}
+                      {worker.active && !recordsByWorkerDay.has(`${worker.id}|${absenceDate}`) && !openShiftByWorker.has(worker.id) && absenceDate && absenceDate >= startDate && absenceDate <= endDate && absenceDate <= data.today && <Button size="sm" variant="outline" disabled={mutation.isPending} onClick={() => mutation.mutate({ workerId: worker.id, action: "absence", day: absenceDate })}>{ar ? "غياب" : "Absent"}</Button>}
                     </div>
                   </td>
                 </tr>;
               })}
-              {activeWorkers.length === 0 && <tr><td colSpan={7} className="p-4 text-center text-stone-500">{ar ? "لا توجد حسابات عمال نشطة." : "Aucun employé actif."}</td></tr>}
+              {workersToShow.length === 0 && <tr><td colSpan={7} className="p-4 text-center text-stone-500">{ar ? "لا توجد حسابات عمال نشطة." : "Aucun employé actif."}</td></tr>}
             </tbody>
           </table>
         </div>
