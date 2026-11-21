@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from pymongo import ASCENDING, ReturnDocument
 from pymongo.errors import DuplicateKeyError
 
-from lib.auth import require_admin
+from lib.attendance_auth import require_attendance_admin
 from lib.db import db
 
 router = APIRouter(tags=["attendance"])
@@ -104,7 +104,7 @@ async def _ensure_attendance_indexes() -> None:
 async def attendance_register(
     start_date: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     end_date: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
-    _: dict = Depends(require_admin),
+    _: dict = Depends(require_attendance_admin),
 ):
     today = _local_today()
     if start_date is None and end_date is None:
@@ -145,7 +145,7 @@ async def attendance_register(
 
 
 @router.post("/attendance/{worker_id}/check-in")
-async def attendance_check_in(worker_id: str, admin: dict = Depends(require_admin)):
+async def attendance_check_in(worker_id: str, admin: dict = Depends(require_attendance_admin)):
     worker = await _worker(worker_id)
     if not worker.get("active"):
         raise HTTPException(409, "worker_is_inactive")
@@ -179,7 +179,7 @@ async def attendance_check_in(worker_id: str, admin: dict = Depends(require_admi
 
 
 @router.post("/attendance/{worker_id}/check-out")
-async def attendance_check_out(worker_id: str, admin: dict = Depends(require_admin)):
+async def attendance_check_out(worker_id: str, admin: dict = Depends(require_attendance_admin)):
     await _worker(worker_id)
     now = datetime.now(timezone.utc)
     current = await db.attendance.find_one(
@@ -209,7 +209,7 @@ async def attendance_check_out(worker_id: str, admin: dict = Depends(require_adm
 async def attendance_mark_absent(
     worker_id: str,
     body: AbsenceIn,
-    admin: dict = Depends(require_admin),
+    admin: dict = Depends(require_attendance_admin),
 ):
     worker = await _worker(worker_id)
     if body.day > _local_today():
