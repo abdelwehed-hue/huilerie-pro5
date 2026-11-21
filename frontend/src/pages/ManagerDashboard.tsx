@@ -1,6 +1,6 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, AlertTriangle, Boxes, CalendarClock, ClipboardList, Factory, RefreshCw, ShoppingBasket, ShoppingCart, Users, Wallet, type LucideIcon } from "lucide-react";
-import { apiGet } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Activity, AlertTriangle, Boxes, CalendarClock, ClipboardList, Factory, RefreshCw, ShoppingBasket, ShoppingCart, Users, Wallet, LogIn, LogOut, type LucideIcon } from "lucide-react";
+import { apiGet, apiPost } from "@/lib/api";
 import { fmtMoney, fmtNum, useI18n } from "@/lib/i18n";
 import { useMe } from "@/lib/useMe";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ type Load = {
   cancelled?: boolean;
   status?: string;
 };
-type User = { id: string; role: string; active: boolean; full_name: string };
+type User = { id: string; role: string; active: boolean; full_name: string };\ntype AttendanceRecord = { worker_id: string; check_in?: string | null; check_out?: string | null };\ntype AttendanceRow = { id: string; full_name: string; username?: string; status: "absent" | "present" | "completed"; attendance?: AttendanceRecord | null };\ntype AttendanceResponse = { attendance_date: string; workers: AttendanceRow[] };
 
 function Metric({ label, value, detail, icon: Icon, tone }: {
   label: string; value: string; detail: string; icon: LucideIcon; tone: string;
@@ -78,7 +78,7 @@ export default function ManagerDashboard() {
   const stats = useQuery({ queryKey: ["manager-dashboard", "stats"], queryFn: () => apiGet<Stats>("/stats"), refetchInterval: 15_000 });
   const loads = useQuery({ queryKey: ["manager-dashboard", "loads"], queryFn: () => apiGet<Load[]>("/loads"), refetchInterval: 15_000 });
   const users = useQuery({ queryKey: ["manager-dashboard", "users"], queryFn: () => apiGet<User[]>("/users"), enabled: !!isAdmin, refetchInterval: 30_000 });
-  const accounting = useQuery({ queryKey: ["manager-dashboard", "accounting"], queryFn: () => apiGet<Overview>("/accounting/overview"), enabled: !!isAdmin, refetchInterval: 30_000, retry: false });
+  const accounting = useQuery({ queryKey: ["manager-dashboard", "accounting"], queryFn: () => apiGet<Overview>("/accounting/overview"), enabled: !!isAdmin, refetchInterval: 30_000, retry: false });\n  const attendance = useQuery({ queryKey: ["manager-dashboard", "attendance"], queryFn: () => apiGet<AttendanceResponse>("/attendance/today"), enabled: !!isAdmin, refetchInterval: 15_000 });\n  const attendanceAction = useMutation({ mutationFn: ({ workerId, action }: { workerId: string; action: "check-in" | "check-out" }) => apiPost<AttendanceRecord>(`/attendance/${encodeURIComponent(workerId)}/${action}`), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["manager-dashboard", "attendance"] }); } });
 
   if (me.isPending) return <div className="p-6 text-stone-500">{ar ? "جارٍ التحقق من الصلاحيات…" : "Vérification des autorisations…"}</div>;
   if (!isAdmin) return <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-800">{ar ? "هذه اللوحة متاحة للمدير فقط." : "Ce tableau de bord est réservé à l’administrateur."}</div>;
@@ -95,8 +95,8 @@ export default function ManagerDashboard() {
   const currentLoads = (loads.data ?? []).filter((load) => !load.cancelled);
   const pendingLoads = currentLoads.filter((load) => load.oil_kg == null).length;
   const completedLoads = currentLoads.filter((load) => load.oil_kg != null).length;
-  const loading = stats.isPending || loads.isPending || users.isPending || accounting.isPending;
-  const failed = stats.isError || loads.isError || users.isError || accounting.isError;
+  const loading = stats.isPending || loads.isPending || users.isPending || accounting.isPending || attendance.isPending;
+  const failed = stats.isError || loads.isError || users.isError || accounting.isError || attendance.isError;
   const money = (v: unknown) => fmtMoney(Number(v ?? 0));
   const refresh = () => { void qc.invalidateQueries({ queryKey: ["manager-dashboard"] }); };
 
@@ -115,7 +115,7 @@ export default function ManagerDashboard() {
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       <Metric label={ar ? "حمولات اليوم" : "Réceptions aujourd’hui"} value={s ? fmtNum(s.loads_today) : "—"} detail={ar ? "عدد الحمولات المسجلة اليوم" : "Nombre de réceptions du jour"} icon={Boxes} tone="border-sky-200 bg-sky-50 text-sky-950" />
       <Metric label={ar ? "الزيتون المعالج اليوم" : "Olives traitées aujourd’hui"} value={s ? `${fmtNum(s.olive_kg_today)} kg` : "—"} detail={ar ? "حسب سجل الحمولات" : "D’après les chargements"} icon={Factory} tone="border-lime-200 bg-lime-50 text-lime-950" />
-      <Metric label={ar ? "الزيت المستخرج اليوم" : "Huile extraite aujourd’hui"} value={s ? fmtNum(s.oil_kg_today) : "—"} detail={ar ? "لتر" : "Litres"} icon={Activity} tone="border-amber-200 bg-amber-50 text-amber-950" />
+      <Metric label={ar ? "الزيت المستخرج اليوم" : "Huile extraite aujourd’hui"} value={s ? `${fmtNum(s.oil_kg_today)} kg` : "—"} detail={ar ? "حسب وحدة سجل الإنتاج" : "Selon l’unité du registre de production"} icon={Activity} tone="border-amber-200 bg-amber-50 text-amber-950" />
       <Metric label={ar ? "مداخيل العصر اليوم" : "Recettes de pressage aujourd’hui"} value={s ? money(s.revenue_today) : "—"} detail="TND" icon={Wallet} tone="border-violet-200 bg-violet-50 text-violet-950" />
     </div>
 
@@ -129,11 +129,35 @@ export default function ManagerDashboard() {
     </div>
 
     <div className="grid gap-3 md:grid-cols-3">
-      <section className="rounded-2xl border bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-2 text-stone-700"><Users className="size-5 text-sky-700" /><h2 className="font-bold">{ar ? "العمال" : "Employés"}</h2></div>
-        <p className="mt-3 text-3xl font-bold tabular-nums">{users.data ? activeWorkers : "—"}</p>
-        <p className="text-xs text-stone-500">{ar ? "حسابات العمال النشطة" : "Comptes employés actifs"}</p>
-        <div className="mt-3 rounded-lg bg-amber-50 p-2 text-xs text-amber-800">{ar ? "بيانات الحضور والانصراف ستظهر بعد ربط سجل الحضور." : "Les présences et heures de sortie apparaîtront lorsque le registre de présence sera connecté."}</div>
+      <section className="rounded-2xl border bg-white p-4 shadow-sm md:col-span-3">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-stone-700"><Users className="size-5 text-sky-700" /><h2 className="font-bold">{ar ? "جدول العمال والحضور والانصراف" : "Employés — présences et sorties"}</h2></div>
+          <span className="text-xs text-stone-500">{attendance.data?.attendance_date ?? "—"} · {ar ? "توقيت تونس" : "Heure de Tunis"}</span>
+        </div>
+        <div className="mb-3 flex flex-wrap gap-3 text-xs">
+          <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-800">{ar ? "حاضرون" : "Présents"}: {attendance.data?.workers.filter((w) => w.status === "present").length ?? "—"}</span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">{ar ? "انصرفوا" : "Sortis"}: {attendance.data?.workers.filter((w) => w.status === "completed").length ?? "—"}</span>
+          <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-800">{ar ? "لم يسجل حضورهم" : "Non pointés"}: {attendance.data?.workers.filter((w) => w.status === "absent").length ?? "—"}</span>
+        </div>
+        {attendance.isError && <p className="mb-2 text-sm text-rose-700">{ar ? "تعذر تحميل سجل الحضور." : "Impossible de charger le registre de présence."}</p>}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[620px] text-sm">
+            <thead><tr className="border-b text-start text-xs text-stone-500"><th className="p-2 text-start">{ar ? "العامل" : "Employé"}</th><th className="p-2 text-start">{ar ? "الحضور" : "Arrivée"}</th><th className="p-2 text-start">{ar ? "الانصراف" : "Départ"}</th><th className="p-2 text-start">{ar ? "الحالة" : "Statut"}</th><th className="p-2 text-end">{ar ? "الإجراء" : "Action"}</th></tr></thead>
+            <tbody>
+              {(attendance.data?.workers ?? []).map((worker) => <tr key={worker.id} className="border-b last:border-0">
+                <td className="p-2 font-medium">{worker.full_name}</td>
+                <td className="p-2 tabular-nums" dir="ltr">{worker.attendance?.check_in ?? "—"}</td>
+                <td className="p-2 tabular-nums" dir="ltr">{worker.attendance?.check_out ?? "—"}</td>
+                <td className="p-2">{worker.status === "absent" ? (ar ? "لم يسجل" : "Non pointé") : worker.status === "present" ? (ar ? "حاضر" : "Présent") : (ar ? "انصرف" : "Sorti")}</td>
+                <td className="p-2 text-end">
+                  {worker.status === "absent" ? <Button size="sm" disabled={attendanceAction.isPending} onClick={() => attendanceAction.mutate({ workerId: worker.id, action: "check-in" })}><LogIn className="me-1 size-3.5"/>{ar ? "تسجيل الحضور" : "Pointer"}</Button> : worker.status === "present" ? <Button size="sm" variant="outline" disabled={attendanceAction.isPending} onClick={() => attendanceAction.mutate({ workerId: worker.id, action: "check-out" })}><LogOut className="me-1 size-3.5"/>{ar ? "تسجيل الانصراف" : "Sortie"}</Button> : <span className="text-xs text-emerald-700">{ar ? "مكتمل" : "Terminé"}</span>}
+                </td>
+              </tr>)}
+              {attendance.data?.workers.length === 0 && <tr><td colSpan={5} className="p-4 text-center text-sm text-stone-500">{ar ? "لا توجد حسابات عمال نشطة." : "Aucun employé actif."}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        {attendanceAction.isError && <p className="mt-2 text-sm text-rose-700">{ar ? "تعذر تسجيل العملية. حدّث الصفحة وتحقق من السجل." : "Action impossible. Actualisez et vérifiez le registre."}</p>}
       </section>
       <section className="rounded-2xl border bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2 text-stone-700"><CalendarClock className="size-5 text-orange-700" /><h2 className="font-bold">{ar ? "حالة الحمولات" : "État des chargements"}</h2></div>
